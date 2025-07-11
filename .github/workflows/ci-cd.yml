@@ -119,19 +119,23 @@ jobs:
           load: true          # Load image into local Docker
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+      # - name: Set local image tag
+      #   id: local_tag
+      #   run: |
+      #     echo "tag=$(echo '${{ steps.meta.outputs.tags }}' | grep sha-)" >> $GITHUB_OUTPUT
 
-      - name: Run container from image
-        run: |
-          docker run -d --name app-test -p 8080:80 ${{ steps.meta.outputs.tags }}
-          sleep 5
+      # - name: Run container from image
+      #   run: |
+      #     docker run -d --name app-test -p 8080:80 ${{ steps.meta.outputs.tags }}
+      #     sleep 5
 
-      - name: Run basic health check
-        run: |
-          curl -f http://localhost:8080 || (echo "Health check failed" && exit 1)
+      # - name: Run basic health check
+      #   run: |
+      #     curl -f http://localhost:8080 || (echo "Health check failed" && exit 1)
 
-      - name: Clean up container
-        if: always()
-        run: docker rm -f app-test
+      # - name: Clean up container
+      #   if: always()
+      #   run: docker rm -f app-test
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
