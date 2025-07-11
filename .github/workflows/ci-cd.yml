@@ -112,14 +112,14 @@ jobs:
             # type=ref,event=branch
             # latest
 
-      - name: Extract SHA tag only
-        id: sha_tag
-        run: |
-          echo "full_tags=\"${{ steps.meta.outputs.tags }}\""
-          # Find tag that starts with sha-
-          sha_tag=$(echo "${full_tags}" | tr ',' '\n' | grep '^sha-')
-          echo "sha_tag=${sha_tag}"
-          echo "sha_tag=${sha_tag}" >> $GITHUB_OUTPUT
+      # - name: Extract SHA tag only
+      #   id: sha_tag
+      #   run: |
+      #     echo "full_tags=\"${{ steps.meta.outputs.tags }}\""
+      #     # Find tag that starts with sha-
+      #     sha_tag=$(echo "${full_tags}" | tr ',' '\n' | grep '^sha-')
+      #     echo "sha_tag=${sha_tag}"
+      #     echo "sha_tag=${sha_tag}" >> $GITHUB_OUTPUT
 
       - name: Build Docker image
         uses: docker/build-push-action@v5
