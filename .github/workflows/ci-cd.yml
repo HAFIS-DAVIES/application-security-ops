@@ -108,28 +108,41 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            # type=sha,format=long
+            type=sha,format=long
             latest
       
-      - name: Build Docker image
+      - name: Build Docker image (local only)
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: true
+          push: false         # Don't push yet
+          load: true          # Load image into local Docker
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # load: true
-      
+
+      - name: Run container from image
+        run: |
+          docker run -d --name app-test -p 8080:80 ${{ steps.meta.outputs.tags }}
+          sleep 5
+
+      - name: Run basic health check
+        run: |
+          curl -f http://localhost:8080 || (echo "Health check failed" && exit 1)
+
+      - name: Clean up container
+        if: always()
+        run: docker rm -f app-test
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          image-ref: ${{ steps.meta.outputs.tags }}
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
-      
+
       - name: Push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -137,10 +150,13 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-      
+
       - name: Set image tag output
         id: set_output
-        run: echo "image_tag=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+        run: echo "image_tag=sha-${{ steps.meta.outputs.image_sha }}" >> $GITHUB_OUTPUT
+
+     
+
 
   update-k8s:
     name: Update Kubernetes Deployment
@@ -152,30 +168,30 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.TOKEN }}
-      
+    
       - name: Setup Git config
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-      
+    
       - name: Update Kubernetes deployment file
         env:
-          IMAGE_TAG: sha-${{ github.sha }}
+          IMAGE_TAG: ${{ needs.docker.outputs.image_tag }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           REGISTRY: ghcr.io
         run: |
-          # Define the new image with tag
-          NEW_IMAGE="${REGISTRY}/${GITHUB_REPOSITORY}:${IMAGE_TAG}"
-          
-          # Update the deployment file directly
-          sed -i "s|image: ${REGISTRY}/.*|image: ${NEW_IMAGE}|g" kubernetes/deployment.yaml
-          
-          # Verify the change
-          echo "Updated deployment to use image: ${NEW_IMAGE}"
-          grep -A 1 "image:" kubernetes/deployment.yaml
-      
+            # Define the new image with tag
+            NEW_IMAGE="${REGISTRY}/${GITHUB_REPOSITORY}:${IMAGE_TAG}"
+            
+            # Update the deployment file directly
+            sed -i "s|image: ${REGISTRY}/.*|image: ${NEW_IMAGE}|g" kubernetes/deployment.yaml
+            
+            # Verify the change
+            echo "Updated deployment to use image: ${NEW_IMAGE}"
+            grep -A 1 "image:" kubernetes/deployment.yaml
+        
       - name: Commit and push changes
         run: |
-          git add kubernetes/deployment.yaml
-          git commit -m "Update Kubernetes deployment with new image tag: ${{ needs.docker.outputs.image_tag }} [skip ci]" || echo "No changes to commit"
-          git push
+            git add kubernetes/deployment.yaml
+            git commit -m "Update Kubernetes deployment with new image tag: ${IMAGE_TAG} [skip ci]" || echo "No changes to commit"
+            git push
