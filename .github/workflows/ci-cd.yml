@@ -112,6 +112,15 @@ jobs:
             type=ref,event=branch
             latest
 
+      - name: Extract SHA tag only
+        id: sha_tag
+        run: |
+          echo "full_tags=\"${{ steps.meta.outputs.tags }}\""
+          # Find tag that starts with sha-
+          sha_tag=$(echo "${full_tags}" | tr ',' '\n' | grep '^sha-')
+          echo "sha_tag=${sha_tag}"
+          echo "sha_tag=${sha_tag}" >> $GITHUB_OUTPUT
+
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
@@ -166,11 +175,11 @@ jobs:
 
       - name: Update Kubernetes deployment file
         env:
-          IMAGE_TAG:  ${{ needs.docker.outputs.image_tag }}
+          IMAGE_TAG:  ${{ steps.sha_tag.outputs.sha_tag }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           REGISTRY: ghcr.io
         run: |
-          NEW_IMAGE="${REGISTRY}/${GITHUB_REPOSITORY}:${IMAGE_TAG}"
+          NEW_IMAGE="${REGISTRY}/${GITHUB_REPOSITORY}:latest"
           sed -i "s|image: .*|image: ${NEW_IMAGE}|g" kubernetes/deployment.yaml
           echo "Updated deployment to use image: ${NEW_IMAGE}"
           grep -A 1 "image:" kubernetes/deployment.yaml
