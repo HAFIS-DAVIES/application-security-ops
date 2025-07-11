@@ -23,7 +23,7 @@ jobs:
           cache: 'npm'
       
       - name: Install dependencies
-        run: npm ci
+        run: npm install
       
       - name: Run tests
         run: npm test || echo "No tests found, would add tests in a real project"
@@ -109,7 +109,6 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=sha,format=long
-            type=ref,event=branch
             latest
       
       - name: Build Docker image
