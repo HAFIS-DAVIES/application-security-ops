@@ -88,3 +88,6 @@ yarn build
 
 The build artifacts will be stored in the `dist/` directory.
 
+<img width="1939" height="691" alt="image" src="https://github.com/user-attachments/assets/8c8df736-d7fe-4aa5-a9b5-f932ee449857" />
+
+
