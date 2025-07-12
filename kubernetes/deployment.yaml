@@ -16,8 +16,8 @@ spec:
     spec:
       containers:
       - name: tic-tac-toe
-        image: ghcr.io/HAFIS-DAVIES/application-security-ops:${ needs.docker.outputs.image_tag }
-        # Image will be automatically updated by CI/CD pipelines
+        image: ghcr.io/HAFIS-DAVIES/application-security-ops:sha-de3967f156b61cdd534a58f653a666ab5bdacf5e
+        # Image will be automatically updated by CI/CD pipeline
         imagePullPolicy: Always
         ports:
         - containerPort: 80
